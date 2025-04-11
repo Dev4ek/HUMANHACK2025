@@ -30,7 +30,6 @@ async def list_documents(session: SessionDep):
     docs = result.scalars().all()
     return docs
 
-
 @router_documents.post(
     "",
     response_model=documents_schemas.DocumentResponse,
