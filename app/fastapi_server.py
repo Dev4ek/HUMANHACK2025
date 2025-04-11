@@ -10,7 +10,7 @@ from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import router_auth, router_users
+from app.routers import router_auth, router_users, router_employees, router_enterprises, router_departments, router_documents
 
 app = FastAPI(
     title="Hackaton",
@@ -33,6 +33,11 @@ app.add_middleware(
 # Включение роутеров
 app.include_router(router_auth)
 app.include_router(router_users)
+app.include_router(router_employees)
+app.include_router(router_enterprises)
+app.include_router(router_departments)
+app.include_router(router_documents)
+
 
 # Обработка исключений
 @app.exception_handler(StarletteHTTPException)

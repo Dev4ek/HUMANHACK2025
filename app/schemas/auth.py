@@ -1,8 +1,9 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 
-# Pydantic-схемы для регистрации и авторизации
-class UserRegister(BaseModel):
+
+
+class AuthRegister(BaseModel):
     email: EmailStr
     phone: str
     password: str
@@ -10,6 +11,12 @@ class UserRegister(BaseModel):
     last_name: Optional[str] = None
 
 
-class UserLogin(BaseModel):
+class AuthLogin(BaseModel):
     email: EmailStr
     password: str
+    
+    
+class AuthOut(BaseModel):
+    access_token: str
+    token_type: str
+    
