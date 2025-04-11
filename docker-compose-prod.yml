@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: postgres
     environment:
-      - POSTGRES_PASSWORD=0ffd4c0d93883b0b6ccd295ab193
+      - POSTGRES_PASSWORD=123456
       - POSTGRES_USER=postgres
       - POSTGRES_DB=flagman
       - TZ=Europe/Moscow
