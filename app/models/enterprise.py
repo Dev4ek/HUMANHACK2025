@@ -38,6 +38,5 @@ class Enterprise(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
-    # Связи: организация содержит множество отделов и имеет своих сотрудников (через ассоциацию)
     departments: Mapped[List["Department"]] = relationship("Department", back_populates="enterprise", cascade="all, delete-orphan")
     employee_associations: Mapped[List["EmployeeEnterprise"]] = relationship("EmployeeEnterprise", back_populates="enterprise", cascade="all, delete-orphan")

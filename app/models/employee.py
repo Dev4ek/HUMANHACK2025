@@ -40,7 +40,6 @@ class Employee(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     phone: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
 
-    # Связи: сотрудник может принадлежать к нескольким организациям и отделам, создавать документы и подписывать их
     enterprise_associations: Mapped[List["EmployeeEnterprise"]] = relationship("EmployeeEnterprise", back_populates="employee", cascade="all, delete-orphan")
     department_associations: Mapped[List["EmployeeDepartment"]] = relationship("EmployeeDepartment", back_populates="employee", cascade="all, delete-orphan")
     documents_created: Mapped[List["Document"]] = relationship("Document", back_populates="sender", cascade="all, delete-orphan")
@@ -54,7 +53,6 @@ class EmployeeEnterprise(Base):
     enterprise_id: Mapped[int] = mapped_column(Integer, ForeignKey("enterprise.enterprise_id"), primary_key=True)
     role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    # Связи: связь с сотрудником и организацией
     employee: Mapped["Employee"] = relationship("Employee", back_populates="enterprise_associations")
     enterprise: Mapped["Enterprise"] = relationship("Enterprise", back_populates="employee_associations")
 
@@ -65,7 +63,6 @@ class EmployeeDepartment(Base):
     department_id: Mapped[int] = mapped_column(Integer, ForeignKey("department.department_id"), primary_key=True)
     role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    # Связи: связь с сотрудником и отделом
     employee: Mapped["Employee"] = relationship("Employee", back_populates="department_associations")
     department: Mapped["Department"] = relationship("Department", back_populates="employee_associations")
 

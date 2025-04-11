@@ -53,7 +53,6 @@ class DocumentRecipient(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    # Связи: связь с документом и получателем (сотрудником)
     document: Mapped["Document"] = relationship("Document", back_populates="recipients")
     recipient: Mapped["Employee"] = relationship("Employee", back_populates="document_recipients")
 
@@ -66,6 +65,5 @@ class DocumentSignature(Base):
     signed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     confirmation_method: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    # Связи: связь с документом и сотрудником, подписывающим его
     document: Mapped["Document"] = relationship("Document", back_populates="signatures")
     employee: Mapped["Employee"] = relationship("Employee", back_populates="signatures")
