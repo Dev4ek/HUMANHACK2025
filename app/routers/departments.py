@@ -15,7 +15,8 @@ router_departments = APIRouter(prefix="/departments", tags=["Departments"])
     response_model=List[departments_schemas.DepartmentResponse]
 )
 async def list_departments(
-    session: UserTokenDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = (
         select(Department)
@@ -32,7 +33,8 @@ async def list_departments(
 )
 async def create_department(
     department: departments_schemas.DepartmentCreate,
-    session: UserTokenDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = (
         select(departments_schemas.Enterprise)
@@ -61,7 +63,7 @@ async def create_department(
 async def assign_department_boss(
     department_id: int,
     payload: departments_schemas.BossAssign,
-    session: UserTokenDep,
+    session: SessionDep,
     current_user: UserTokenDep
 ):
     stmt = select(Department).where(Department.department_id == department_id)
@@ -88,7 +90,8 @@ async def assign_department_boss(
 )
 async def get_department_employees(
     department_id: int,
-    session: UserTokenDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = (
         select(Employee)

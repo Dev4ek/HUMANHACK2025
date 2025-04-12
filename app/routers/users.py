@@ -1,6 +1,6 @@
 import datetime
 from typing import Optional
-from app.dependencies import SessionDep, User
+from app.dependencies import SessionDep, UserTokenDep
 
 from app.schemas import auth as auth_schemas
 from app.schemas import users as users_schemas
@@ -19,5 +19,5 @@ router_users = APIRouter(prefix="/users", tags=["Пользователи"])
 
 
 @router_users.get("/info/me", status_code=status.HTTP_200_OK, response_model=users_schemas.UserInfo)
-async def info_me(current_user: User, session: SessionDep):
+async def info_me(current_user: UserTokenDep, session: SessionDep):
     return current_user

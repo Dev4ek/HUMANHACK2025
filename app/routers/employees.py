@@ -25,7 +25,7 @@ router_employees = APIRouter(prefix="/employees", tags=["Работники"])
     response_model=List[employees_schemas.EmployeeResponse],
     summary="Получить список сотрудников"
 )
-async def list_employees(session: SessionDep):
+async def list_employees(session: SessionDep,Bearer: UserTokenDep):
     stmt = select(Employee)
     result = await session.execute(stmt)
     employees = result.scalars().all()
@@ -39,7 +39,8 @@ async def list_employees(session: SessionDep):
 )
 async def create_employee(
     employee: employees_schemas.EmployeeCreate,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     new_employee = Employee(
         first_name=employee.first_name,
@@ -59,7 +60,8 @@ async def create_employee(
 )
 async def invite_employee_to_enterprise(
     payload: employees_schemas.EmployeeEnterpriseInvite,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = select(Employee).where(Employee.employee_id == payload.employee_id)
     result = await session.execute(stmt)
@@ -98,7 +100,8 @@ async def invite_employee_to_enterprise(
 )
 async def assign_employee_to_department(
     payload: employees_schemas.EmployeeDepartmentAssign,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = select(Employee).where(Employee.employee_id == payload.employee_id)
     result = await session.execute(stmt)
@@ -139,7 +142,8 @@ async def update_employee_enterprise_role(
     employee_id: int,
     enterprise_id: int,
     payload: employees_schemas.EmployeeEnterpriseUpdate,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = select(EmployeeEnterprise).where(
         EmployeeEnterprise.employee_id == employee_id,
@@ -161,7 +165,8 @@ async def update_employee_department_role(
     employee_id: int,
     department_id: int,
     payload: employees_schemas.EmployeeDepartmentUpdate,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = select(EmployeeDepartment).where(
         EmployeeDepartment.employee_id == employee_id,

@@ -24,7 +24,7 @@ if not os.path.exists(UPLOAD_DIR):
     response_model=List[documents_schemas.DocumentResponse],
     summary="Получить список документов"
 )
-async def list_documents(session: UserTokenDep):
+async def list_documents(session: SessionDep,Bearer: UserTokenDep):
     stmt = select(Document)
     result = await session.execute(stmt)
     docs = result.scalars().all()
@@ -34,9 +34,9 @@ async def list_documents(session: UserTokenDep):
 @router_documents.get(
     "/{document_id}",
     response_model=documents_schemas.DocumentResponse,
-    summary="Получить детали документа по ID"
+    summary="Получить детали документа по ID",
 )
-async def get_document(document_id: int, session: UserTokenDep):
+async def get_document(document_id: int, session: SessionDep,current_user: UserTokenDep):
     stmt = select(Document).where(Document.document_id == document_id)
     result = await session.execute(stmt)
     document = result.scalars().first()
@@ -52,7 +52,8 @@ async def get_document(document_id: int, session: UserTokenDep):
     summary="Загрузить документ в виде файла"
 )
 async def upload_document(
-    session: UserTokenDep,
+    session: SessionDep,
+    current_user: UserTokenDep,
     sender_id: int = Form(...),
     title: str = Form(...),
     status: str = Form(...),
@@ -91,8 +92,9 @@ async def upload_document(
 )
 async def send_document(
     payload: documents_schemas.DocumentSend,
-    session: UserTokenDep
-):
+    session: SessionDep,
+    current_user: UserTokenDep
+    ):
     stmt = select(Document).where(Document.document_id == payload.document_id)
     result_doc = await session.execute(stmt)
     doc = result_doc.scalars().first()
@@ -126,7 +128,8 @@ async def send_document(
 )
 async def sign_document(
     payload: documents_schemas.DocumentSign,
-    session: UserTokenDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = select(Document).where(Document.document_id == payload.document_id)
     result_doc = await session.execute(stmt)
@@ -158,7 +161,7 @@ async def sign_document(
 )
 async def incoming_documents(
     current_user: UserTokenDep,
-    session: UserTokenDep
+    session: SessionDep,
 ):
     employee_id = current_user.id
     stmt = select(DocumentRecipient).where(
@@ -185,7 +188,7 @@ async def incoming_documents(
 )
 async def document_history(
     current_user: UserTokenDep,
-    session: UserTokenDep
+    session: SessionDep,
 ):
     employee_id = current_user.id
     stmt_created = select(Document).where(Document.sender_id == employee_id)

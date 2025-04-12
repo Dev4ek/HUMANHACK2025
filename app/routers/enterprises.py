@@ -40,7 +40,8 @@ async def list_enterprises(session: SessionDep):
 )
 async def create_enterprise(
     enterprise: enterprises_schemas.EnterpriseCreate,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     new_enterprise = Enterprise(
         name=enterprise.name,
@@ -102,7 +103,8 @@ async def assign_enterprise_boss(
 )
 async def get_enterprise_structure(
     enterprise_id: int,
-    session: SessionDep
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     stmt = select(Enterprise).where(Enterprise.enterprise_id == enterprise_id)
     result = await session.execute(stmt)
