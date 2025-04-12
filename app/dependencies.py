@@ -41,7 +41,6 @@ async def get_current_user(
     user = await session.get(Users, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не найден")
-    return [session,user]
+    return session,user
 
-UserTokenDep = Annotated[Users, Depends(get_current_user)][0]
-User = Annotated[Users, Depends(get_current_user)][1]
+UserTokenDep,User = Annotated[Users, Depends(get_current_user)]
