@@ -39,6 +39,7 @@ async def register(
         first_name=user.first_name,
         last_name=user.last_name,
     )
+    return new_user
     session.add(new_user)
     await session.commit()
     await session.refresh(new_user)
