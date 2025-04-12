@@ -26,7 +26,10 @@ router_enterprises = APIRouter(prefix="/enterprises", tags=["Предприят�
     response_model=List[enterprises_schemas.EnterpriseResponse],
     summary="Получить список предприятий"
 )
-async def list_enterprises(session: SessionDep):
+async def list_enterprises(
+    session: SessionDep,
+    current_user: UserTokenDep
+):
     stmt = select(Enterprise)
     result = await session.execute(stmt)
     enterprises = result.scalars().all()
@@ -57,7 +60,11 @@ async def create_enterprise(
     response_model=List[employees_schemas.EmployeeResponse],
     summary="Получить сотрудников предприятия по ID"
 )
-async def get_employees_by_enterprise(enterprise_id: int, session: SessionDep):
+async def get_employees_by_enterprise(
+    enterprise_id: int, 
+    session: SessionDep,
+    current_user: UserTokenDep
+    ):
     stmt = select(EmployeeEnterprise).where(EmployeeEnterprise.enterprise_id == enterprise_id)
     result = await session.execute(stmt)
     associations = result.scalars().all()
