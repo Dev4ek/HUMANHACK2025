@@ -47,34 +47,6 @@ async def get_document(document_id: int, session: SessionDep):
     return document
 
 
-@router_documents.put(
-    "/{document_id}",
-    response_model=documents_schemas.DocumentResponse,
-    summary="Обновить документ по ID"
-)
-async def update_document(
-    document_id: int,
-    payload: documents_schemas.DocumentUpdate,  # Предполагается, что такая модель определена в documents.py
-    session: SessionDep
-):
-    stmt = select(Document).where(Document.document_id == document_id)
-    result = await session.execute(stmt)
-    document = result.scalars().first()
-    if not document:
-        raise HTTPException(status_code=404, detail="Документ не найден")
-    
-    if payload.title is not None:
-        document.title = payload.title
-    if payload.content is not None:
-        document.content = payload.content
-    if payload.status is not None:
-        document.status = payload.status
-        
-    await session.commit()
-    await session.refresh(document)
-    return document
-
-
 @router_documents.post(
     "",
     response_model=documents_schemas.DocumentResponse,
@@ -112,11 +84,11 @@ async def create_document(
     summary="Загрузить документ в виде файла"
 )
 async def upload_document(
+    session: SessionDep,
     sender_id: int = Form(...),
     title: str = Form(...),
     status: str = Form(...),
     file: UploadFile = File(...),
-    session: SessionDep = Depends()
 ):
     # Проверяем, существует ли отправитель
     stmt = select(Employee).where(Employee.employee_id == sender_id)
