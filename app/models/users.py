@@ -19,8 +19,23 @@ class Users(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    employee: Mapped[Optional["Employee"]] = relationship("Employee", back_populates="user", uselist=False)
+    # Связь 1-1 с Employee
+    employee: Mapped[Optional["Employee"]] = relationship(
+        "Employee",
+        back_populates="user",
+        uselist=False
+    )
 
+    # Связь с документами отправленными этим юзером (через Employee)
+    documents: Mapped[List["Document"]] = relationship(
+        "Document",
+        secondary="employee",
+        primaryjoin="Users.id==Employee.employee_id",
+        secondaryjoin="Employee.employee_id==Document.sender_id",
+        viewonly=True,
+    )
+
+    # CRUD методы:
     @classmethod
     async def create(cls, session: AsyncSession, **kwargs) -> "Users":
         user = cls(**kwargs)
@@ -43,8 +58,7 @@ class Users(Base):
 
     @classmethod
     async def get_by_id(cls, session: AsyncSession, user_id: int) -> Optional["Users"]:
-        result = await session.get(cls, user_id)
-        return result
+        return await session.get(cls, user_id)
 
     @classmethod
     async def get_by_phone(cls, session: AsyncSession, phone: str) -> Optional["Users"]:
