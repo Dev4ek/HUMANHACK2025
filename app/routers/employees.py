@@ -45,7 +45,6 @@ async def create_employee(
     new_employee = Employee(
         first_name=employee.first_name,
         last_name=employee.last_name,
-        email=employee.email,
         phone=employee.phone,
     )
     session.add(new_employee)

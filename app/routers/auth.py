@@ -1,13 +1,19 @@
+import random
 import datetime
 from typing import Optional
-from app.dependencies import SessionDep
-from app.schemas import auth as auth_schemas
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from app.models import Users               
+from app.dependencies import SessionDep
+from app.schemas import auth as auth_schemas
 from app.utils import auth as auth_utils
 
 router_auth = APIRouter(prefix="/auth", tags=["Авторизация"])
+
+verification_codes = {}
+
+def send_telegram_code(phone: str, code: int):
+    print(f"код {code} для телефона {phone}")
 
 @router_auth.post(
     "/register",
@@ -15,13 +21,10 @@ router_auth = APIRouter(prefix="/auth", tags=["Авторизация"])
     response_model=auth_schemas.AuthOut
 )
 async def register(
-    user: auth_schemas.AuthRegister,
+    user: auth_schemas.AuthRegister,  
     session: SessionDep
 ):
-    stmt = (
-        select(Users)
-        .where(Users.phone == user.phone)
-    )
+    stmt = select(Users).where(Users.phone == user.phone)
     result = await session.execute(stmt)
     existing_user = result.scalars().first()
     
@@ -31,10 +34,8 @@ async def register(
             detail="Такой номер уже существует",
         )
 
-    hashed_password = auth_utils.hash_password(user.password)
     new_user = Users(
         phone=user.phone,
-        hashed_password=hashed_password,
         first_name=user.first_name,
         last_name=user.last_name,
     )
@@ -43,33 +44,69 @@ async def register(
     await session.refresh(new_user)
     
     access_token = auth_utils.create_access_token(data={"sub": str(new_user.id)})
-
     return auth_schemas.AuthOut(
         access_token=access_token,
         token_type="bearer"
     )
-    
-@router_auth.post(
-    "/login"
-)
-async def login(
-    payload: auth_schemas.AuthLogin,
+
+@router_auth.post("/request-code")
+async def request_code(
+    phone: str,
     session: SessionDep
 ):
-    stmt = (
-        select(Users)
-        .where(Users.phone == payload.phone)
-    )
-    result = await session.execute(stmt)
-    existing_user = result.scalars().first()
-    if not existing_user or not auth_utils.verify_password(
-        payload.password,
-        existing_user.hashed_password
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неправильный номер или пароль",
-        )
 
-    access_token = auth_utils.create_access_token(data={"sub": str(existing_user.id)})
+    stmt = select(Users).where(Users.phone == phone)
+    result = await session.execute(stmt)
+    user = result.scalars().first()
+    if not user:
+         raise HTTPException(
+             status_code=status.HTTP_404_NOT_FOUND,
+             detail="Пользователь с таким номером не найден"
+         )
+
+    code = random.randint(1000, 9999)
+    expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    verification_codes[phone] = {'code': str(code), 'expiry': expiry}
+    
+    send_telegram_code(phone, code)
+    
+    return {"detail": "Код отправлен через Telegram-бот"}
+
+@router_auth.post("/verify-code")
+async def verify_code(
+    phone: str,
+    code: str,
+    session: SessionDep
+):
+
+    stored = verification_codes.get(phone)
+    if not stored:
+         raise HTTPException(
+             status_code=status.HTTP_401_UNAUTHORIZED,
+             detail="Код не найден. Сначала запросите код."
+         )
+    if stored['code'] != code:
+         raise HTTPException(
+             status_code=status.HTTP_401_UNAUTHORIZED,
+             detail="Неверный код"
+         )
+    if stored['expiry'] < datetime.datetime.utcnow():
+         del verification_codes[phone]
+         raise HTTPException(
+             status_code=status.HTTP_401_UNAUTHORIZED,
+             detail="Код устарел. Повторите запрос"
+         )
+
+    del verification_codes[phone]
+
+    stmt = select(Users).where(Users.phone == phone)
+    result = await session.execute(stmt)
+    user = result.scalars().first()
+    if not user:
+         raise HTTPException(
+             status_code=status.HTTP_404_NOT_FOUND,
+             detail="Пользователь не найден"
+         )
+
+    access_token = auth_utils.create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}

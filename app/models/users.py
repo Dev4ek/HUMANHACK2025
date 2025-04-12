@@ -35,7 +35,6 @@ class Users(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     phone: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
