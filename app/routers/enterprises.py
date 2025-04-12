@@ -21,7 +21,6 @@ from app.schemas import enterprises as enterprises_schemas
 
 router_enterprises = APIRouter(prefix="/enterprises", tags=["Предприятия"])
 
-
 @router_enterprises.get(
     "",
     response_model=List[enterprises_schemas.EnterpriseResponse],
@@ -52,7 +51,6 @@ async def create_enterprise(
     await session.refresh(new_enterprise)
     return new_enterprise
 
-# Эндпоинт для получения сотрудников по ID предприятия
 @router_enterprises.get(
     "/{enterprise_id}/employees",
     response_model=List[employees_schemas.EmployeeResponse],
@@ -69,3 +67,96 @@ async def get_employees_by_enterprise(enterprise_id: int, session: SessionDep):
     result_emp = await session.execute(stmt_emp)
     employees = result_emp.scalars().all()
     return employees
+
+
+@router_enterprises.patch(
+    "/{enterprise_id}/boss",
+    summary="Назначить босса для предприятия"
+)
+async def assign_enterprise_boss(
+    enterprise_id: int,
+    payload: enterprises_schemas.BossAssign,
+    session: SessionDep,
+    current_user: UserTokenDep
+):
+    stmt = select(Enterprise).where(Enterprise.enterprise_id == enterprise_id)
+    result = await session.execute(stmt)
+    enterprise = result.scalars().first()
+    if not enterprise:
+        raise HTTPException(status_code=404, detail="Предприятие не найдено")
+        
+    stmt = select(Employee).where(Employee.employee_id == payload.boss_id)
+    result = await session.execute(stmt)
+    boss = result.scalars().first()
+    if not boss:
+        raise HTTPException(status_code=404, detail="Сотрудник-босс не найден")
+
+    enterprise.boss_id = payload.boss_id
+    await session.commit()
+    return {"message": "Босс предприятия успешно назначен"}
+
+
+@router_enterprises.get(
+    "/{enterprise_id}/structure",
+    summary="Получить структуру предприятия с начальниками и сотрудниками"
+)
+async def get_enterprise_structure(
+    enterprise_id: int,
+    session: SessionDep
+):
+    stmt = select(Enterprise).where(Enterprise.enterprise_id == enterprise_id)
+    result = await session.execute(stmt)
+    enterprise = result.scalars().first()
+    if not enterprise:
+        raise HTTPException(status_code=404, detail="Предприятие не найдено")
+
+    structure = {
+        "enterprise_id": enterprise.enterprise_id,
+        "name": enterprise.name,
+        "address": enterprise.address,
+        "boss": None,
+        "departments": []
+    }
+
+    if enterprise.boss:
+        structure["boss"] = {
+            "employee_id": enterprise.boss.employee_id,
+            "first_name": enterprise.boss.first_name,
+            "last_name": enterprise.boss.last_name,
+            "email": enterprise.boss.email,
+            "phone": enterprise.boss.phone,
+        }
+
+    for dept in enterprise.departments:
+        dept_info = {
+            "department_id": dept.department_id,
+            "name": dept.name,
+            "boss": None,
+            "employees": []
+        }
+        if dept.boss:
+            dept_info["boss"] = {
+                "employee_id": dept.boss.employee_id,
+                "first_name": dept.boss.first_name,
+                "last_name": dept.boss.last_name,
+                "email": dept.boss.email,
+                "phone": dept.boss.phone,
+            }
+        employee_ids = [assoc.employee_id for assoc in dept.employee_associations]
+        if employee_ids:
+            stmt_emp = select(Employee).where(Employee.employee_id.in_(employee_ids))
+            result_emp = await session.execute(stmt_emp)
+            employees = result_emp.scalars().all()
+            dept_info["employees"] = [
+                {
+                    "employee_id": emp.employee_id,
+                    "first_name": emp.first_name,
+                    "last_name": emp.last_name,
+                    "email": emp.email,
+                    "phone": emp.phone,
+                }
+                for emp in employees
+            ]
+        structure["departments"].append(dept_info)
+        
+    return structure

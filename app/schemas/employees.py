@@ -17,15 +17,16 @@ class EmployeeResponse(BaseModel):
 class EmployeeEnterpriseInvite(BaseModel):
     employee_id: int
     enterprise_id: int
-    role: Optional[str] = None
+    role: Optional[str] = "employee" 
 
 class EmployeeDepartmentAssign(BaseModel):
     employee_id: int
     department_id: int
-    role: Optional[str] = None
+    role: Optional[str] = "staff"
     
 class EmployeeEnterpriseUpdate(BaseModel):
     role: Optional[str] = None
 
 class EmployeeDepartmentUpdate(BaseModel):
     role: Optional[str] = None
+

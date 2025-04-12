@@ -8,3 +8,7 @@ class DepartmentResponse(BaseModel):
     department_id: int
     enterprise_id: int
     name: str
+
+class BossAssign(BaseModel):
+    boss_id: int
+    

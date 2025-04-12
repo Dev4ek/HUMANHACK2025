@@ -15,11 +15,9 @@ from app.models import Document
 
 router_documents = APIRouter(prefix="/documents", tags=["Документы"])
 
-# Директория для хранения файлов
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = "static"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
-
 
 @router_documents.get(
     "",
@@ -48,36 +46,6 @@ async def get_document(document_id: int, session: SessionDep):
 
 
 @router_documents.post(
-    "",
-    response_model=documents_schemas.DocumentResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Создать новый документ (через JSON)"
-)
-async def create_document(
-    payload: documents_schemas.DocumentCreate,
-    session: SessionDep
-):
-    # Проверяем, существует ли отправитель
-    stmt = select(Employee).where(Employee.employee_id == payload.sender_id)
-    result = await session.execute(stmt)
-    sender = result.scalars().first()
-    
-    if not sender:
-        raise HTTPException(status_code=404, detail="Отправитель не найден")
-    
-    new_doc = Document(
-        sender_id=payload.sender_id,
-        title=payload.title,
-        content=payload.content,  # Для текстовых документов
-        status=payload.status,
-    )
-    session.add(new_doc)
-    await session.commit()
-    await session.refresh(new_doc)
-    return new_doc
-
-
-@router_documents.post(
     "/upload",
     response_model=documents_schemas.DocumentResponse,
     status_code=status.HTTP_201_CREATED,
@@ -90,7 +58,6 @@ async def upload_document(
     status: str = Form(...),
     file: UploadFile = File(...),
 ):
-    # Проверяем, существует ли отправитель
     stmt = select(Employee).where(Employee.employee_id == sender_id)
     result = await session.execute(stmt)
     sender = result.scalars().first()
@@ -240,3 +207,4 @@ async def document_history(
     all_docs = {doc.document_id: doc for doc in (created_docs + signed_docs)}
     history = list(all_docs.values())
     return history
+

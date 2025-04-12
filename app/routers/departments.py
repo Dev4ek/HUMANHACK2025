@@ -1,10 +1,11 @@
 from typing import List, Optional
-from app.dependencies import SessionDep
-from app.models import Department
+from app.dependencies import SessionDep, UserTokenDep
+from app.models import Department, Employee, EmployeeDepartment
 from app.schemas import auth as auth_schemas
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from app.schemas import departments as departments_schemas
+from app.schemas import employees as employees_schemas
 
 router_departments = APIRouter(prefix="/departments", tags=["Departments"])
 
@@ -51,3 +52,53 @@ async def create_department(
     await session.refresh(new_department)
     return new_department
 
+
+@router_departments.patch(
+    "/{department_id}/boss",
+    summary="Назначить начальника отдела"
+)
+async def assign_department_boss(
+    department_id: int,
+    payload: departments_schemas.BossAssign,
+    session: SessionDep,
+    current_user: UserTokenDep
+):
+    stmt = select(Department).where(Department.department_id == department_id)
+    result = await session.execute(stmt)
+    department = result.scalars().first()
+    if not department:
+        raise HTTPException(status_code=404, detail="Отдел не найден")
+        
+    stmt = select(Employee).where(Employee.employee_id == payload.boss_id)
+    result = await session.execute(stmt)
+    boss = result.scalars().first()
+    if not boss:
+        raise HTTPException(status_code=404, detail="Сотрудник-босс не найден")
+
+    department.boss_id = payload.boss_id
+    await session.commit()
+    return {"message": "Начальник отдела успешно назначен"}
+
+
+@router_departments.get(
+    "/{department_id}/employees",
+    response_model=List[employees_schemas.EmployeeResponse],
+    summary="Получить сотрудников отдела по ID"
+)
+async def get_department_employees(
+    department_id: int,
+    session: SessionDep
+):
+    stmt = (
+        select(Employee)
+        .join(EmployeeDepartment, Employee.employee_id == EmployeeDepartment.employee_id)
+        .where(EmployeeDepartment.department_id == department_id)
+    )
+    result = await session.execute(stmt)
+    employees = result.scalars().all()
+    if not employees:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Сотрудники не найдены для данного отдела"
+        )
+    return employees
