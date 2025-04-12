@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 
 class EmployeeCreate(BaseModel):
@@ -12,3 +13,13 @@ class EmployeeResponse(BaseModel):
     last_name: str
     email: str
     phone: str
+
+class EmployeeEnterpriseInvite(BaseModel):
+    employee_id: int
+    enterprise_id: int
+    role: Optional[str] = None
+
+class EmployeeDepartmentAssign(BaseModel):
+    employee_id: int
+    department_id: int
+    role: Optional[str] = None

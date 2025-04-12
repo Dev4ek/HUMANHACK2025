@@ -27,7 +27,6 @@ from typing import TYPE_CHECKING
 from datetime import datetime, timedelta
 from app.utils.main import get_moscow_time
 
-
 if TYPE_CHECKING:
     from app.models import Document, DocumentSignature, DocumentRecipient, Enterprise, Department
     
