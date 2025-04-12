@@ -35,7 +35,13 @@ jobs:
         run: |
           docker ps -q --filter "name=fastapi" | xargs -r docker rm -f
 
-      # 3. Запускаем новый контейнер FastAPI
+      # 3. Применяем миграции Alembic
+      - name: Apply Alembic migrations
+        run: |
+          docker compose -f docker-compose-prod.yml run --rm fastapi alembic upgrade head
+
+
+      # 4. Запускаем новый контейнер FastAPI
       - name: Start all containers
         run: |
           docker compose -f docker-compose-prod.yml up -d
