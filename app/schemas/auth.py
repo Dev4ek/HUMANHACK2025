@@ -4,7 +4,6 @@ from pydantic import BaseModel, EmailStr
 
 
 class AuthRegister(BaseModel):
-    email: EmailStr
     phone: str
     password: str
     first_name: Optional[str] = None
@@ -12,7 +11,7 @@ class AuthRegister(BaseModel):
 
 
 class AuthLogin(BaseModel):
-    email: EmailStr
+    phone: str
     password: str
     
     

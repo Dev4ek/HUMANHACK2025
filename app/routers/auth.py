@@ -33,7 +33,6 @@ async def register(
 
     hashed_password = auth_utils.hash_password(user.password)
     new_user = Users(
-        email=user.email,
         phone=user.phone,
         hashed_password=hashed_password,
         first_name=user.first_name,
@@ -59,7 +58,7 @@ async def login(
 ):
     stmt = (
         select(Users)
-        .where(Users.email == payload.email)
+        .where(Users.phone == payload.phone)
     )
     result = await session.execute(stmt)
     existing_user = result.scalars().first()
