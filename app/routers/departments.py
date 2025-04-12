@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from app.schemas import departments as departments_schemas
 from app.schemas import employees as employees_schemas
+from app.dependencies import SessionDep, UserTokenDep
 
 router_departments = APIRouter(prefix="/departments", tags=["Departments"])
 
@@ -14,7 +15,7 @@ router_departments = APIRouter(prefix="/departments", tags=["Departments"])
     response_model=List[departments_schemas.DepartmentResponse]
 )
 async def list_departments(
-    session: SessionDep
+    session: UserTokenDep
 ):
     stmt = (
         select(Department)
@@ -31,7 +32,7 @@ async def list_departments(
 )
 async def create_department(
     department: departments_schemas.DepartmentCreate,
-    session: SessionDep
+    session: UserTokenDep
 ):
     stmt = (
         select(departments_schemas.Enterprise)
@@ -60,7 +61,7 @@ async def create_department(
 async def assign_department_boss(
     department_id: int,
     payload: departments_schemas.BossAssign,
-    session: SessionDep,
+    session: UserTokenDep,
     current_user: UserTokenDep
 ):
     stmt = select(Department).where(Department.department_id == department_id)
@@ -87,7 +88,7 @@ async def assign_department_boss(
 )
 async def get_department_employees(
     department_id: int,
-    session: SessionDep
+    session: UserTokenDep
 ):
     stmt = (
         select(Employee)

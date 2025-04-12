@@ -24,7 +24,7 @@ if not os.path.exists(UPLOAD_DIR):
     response_model=List[documents_schemas.DocumentResponse],
     summary="Получить список документов"
 )
-async def list_documents(session: SessionDep):
+async def list_documents(session: UserTokenDep):
     stmt = select(Document)
     result = await session.execute(stmt)
     docs = result.scalars().all()
@@ -36,7 +36,7 @@ async def list_documents(session: SessionDep):
     response_model=documents_schemas.DocumentResponse,
     summary="Получить детали документа по ID"
 )
-async def get_document(document_id: int, session: SessionDep):
+async def get_document(document_id: int, session: UserTokenDep):
     stmt = select(Document).where(Document.document_id == document_id)
     result = await session.execute(stmt)
     document = result.scalars().first()
@@ -52,7 +52,7 @@ async def get_document(document_id: int, session: SessionDep):
     summary="Загрузить документ в виде файла"
 )
 async def upload_document(
-    session: SessionDep,
+    session: UserTokenDep,
     sender_id: int = Form(...),
     title: str = Form(...),
     status: str = Form(...),
@@ -91,7 +91,7 @@ async def upload_document(
 )
 async def send_document(
     payload: documents_schemas.DocumentSend,
-    session: SessionDep
+    session: UserTokenDep
 ):
     stmt = select(Document).where(Document.document_id == payload.document_id)
     result_doc = await session.execute(stmt)
@@ -126,7 +126,7 @@ async def send_document(
 )
 async def sign_document(
     payload: documents_schemas.DocumentSign,
-    session: SessionDep
+    session: UserTokenDep
 ):
     stmt = select(Document).where(Document.document_id == payload.document_id)
     result_doc = await session.execute(stmt)
@@ -158,7 +158,7 @@ async def sign_document(
 )
 async def incoming_documents(
     current_user: UserTokenDep,
-    session: SessionDep
+    session: UserTokenDep
 ):
     employee_id = current_user.id
     stmt = select(DocumentRecipient).where(
@@ -185,7 +185,7 @@ async def incoming_documents(
 )
 async def document_history(
     current_user: UserTokenDep,
-    session: SessionDep
+    session: UserTokenDep
 ):
     employee_id = current_user.id
     stmt_created = select(Document).where(Document.sender_id == employee_id)
