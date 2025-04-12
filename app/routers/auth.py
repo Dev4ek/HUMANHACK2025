@@ -24,7 +24,7 @@ async def register(
     user: auth_schemas.AuthRegister,  
     session: SessionDep
 ):
-    return user
+    return user.dict()
     stmt = select(Users).where(Users.phone == user.phone)
     result = await session.execute(stmt)
     existing_user = result.scalars().first()
