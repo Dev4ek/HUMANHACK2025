@@ -30,7 +30,7 @@ async def request_code(phone: str, session: SessionDep):
 
     send_telegram_code(phone, code)
 
-    return {"detail": "Код отправлен"}
+    return {"detail": "Код отправлен","code":code}
 
 
 @router_auth.post("/verify-code")
@@ -76,14 +76,14 @@ async def register(user: auth_schemas.AuthRegister, session: SessionDep):
     return auth_schemas.AuthOut(access_token=access_token, token_type="bearer")
 
 
-@router_auth.post("/login", response_model=auth_schemas.AuthOut)
-async def login(user: auth_schemas.AuthLogin, session: SessionDep):
-    stmt = select(Users).where(Users.phone == user.phone)
-    result = await session.execute(stmt)
-    user_db = result.scalars().first()
+# @router_auth.post("/login", response_model=auth_schemas.AuthOut)
+# async def login(user: auth_schemas.AuthLogin, session: SessionDep):
+#     stmt = select(Users).where(Users.phone == user.phone)
+#     result = await session.execute(stmt)
+#     user_db = result.scalars().first()
 
-    if not user_db:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-
-    access_token = auth_utils.create_access_token(data={"sub": str(user_db.id)})
-    return auth_schemas.AuthOut(access_token=access_token, token_type="bearer")
+#     if not user_db:
+#         raise HTTPException(status_code=404, detail="Пользователь не найден")
+#     else:
+#         access_token = auth_utils.create_access_token(data={"sub": str(user_db.id)})
+#         return auth_schemas.AuthOut(access_token=access_token, token_type="bearer")
