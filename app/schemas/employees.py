@@ -23,3 +23,9 @@ class EmployeeDepartmentAssign(BaseModel):
     employee_id: int
     department_id: int
     role: Optional[str] = None
+    
+class EmployeeEnterpriseUpdate(BaseModel):
+    role: Optional[str] = None
+
+class EmployeeDepartmentUpdate(BaseModel):
+    role: Optional[str] = None

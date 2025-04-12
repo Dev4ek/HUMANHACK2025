@@ -97,7 +97,6 @@ async def upload_document(
     if not sender:
         raise HTTPException(status_code=404, detail="Отправитель не найден")
     
-    # Генерируем уникальное имя файла и сохраняем файл на диск
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
@@ -106,11 +105,10 @@ async def upload_document(
         file_content = await file.read()
         f.write(file_content)
     
-    # Создаем новую запись документа, где поле content содержит путь к файлу
     new_doc = Document(
         sender_id=sender_id,
         title=title,
-        content=file_path,  # Здесь вместо текста сохраняется путь к файлу
+        content=file_path,  
         status=status,
     )
     session.add(new_doc)

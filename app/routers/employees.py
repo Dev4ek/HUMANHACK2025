@@ -20,15 +20,12 @@ from app.schemas import employees as employees_schemas
 
 router_employees = APIRouter(prefix="/employees", tags=["Работники"])
 
-
 @router_employees.get(
     "",
     response_model=List[employees_schemas.EmployeeResponse],
     summary="Получить список сотрудников"
 )
-async def list_employees(
-    session: SessionDep
-):
+async def list_employees(session: SessionDep):
     stmt = select(Employee)
     result = await session.execute(stmt)
     employees = result.scalars().all()
@@ -109,6 +106,7 @@ async def assign_employee_to_department(
     if not employee:
         raise HTTPException(status_code=404, detail="Сотрудник не найден")
 
+    from app.models import Department  
     stmt = select(Department).where(Department.department_id == payload.department_id)
     result = await session.execute(stmt)
     department = result.scalars().first()
@@ -132,3 +130,47 @@ async def assign_employee_to_department(
     session.add(new_association)
     await session.commit()
     return {"message": "Сотрудник успешно назначен в отдел"}
+
+@router_employees.put(
+    "/{employee_id}/enterprise/{enterprise_id}",
+    summary="Обновить роль сотрудника в предприятии"
+)
+async def update_employee_enterprise_role(
+    employee_id: int,
+    enterprise_id: int,
+    payload: employees_schemas.EmployeeEnterpriseUpdate,
+    session: SessionDep
+):
+    stmt = select(EmployeeEnterprise).where(
+        EmployeeEnterprise.employee_id == employee_id,
+        EmployeeEnterprise.enterprise_id == enterprise_id
+    )
+    result = await session.execute(stmt)
+    association = result.scalars().first()
+    if not association:
+        raise HTTPException(status_code=404, detail="Ассоциация не найдена")
+    association.role = payload.role
+    await session.commit()
+    return {"message": "Роль успешно обновлена"}
+
+@router_employees.put(
+    "/{employee_id}/department/{department_id}",
+    summary="Обновить роль сотрудника в отделе"
+)
+async def update_employee_department_role(
+    employee_id: int,
+    department_id: int,
+    payload: employees_schemas.EmployeeDepartmentUpdate,
+    session: SessionDep
+):
+    stmt = select(EmployeeDepartment).where(
+        EmployeeDepartment.employee_id == employee_id,
+        EmployeeDepartment.department_id == department_id
+    )
+    result = await session.execute(stmt)
+    association = result.scalars().first()
+    if not association:
+        raise HTTPException(status_code=404, detail="Ассоциация не найдена")
+    association.role = payload.role
+    await session.commit()
+    return {"message": "Роль успешно обновлена"}
