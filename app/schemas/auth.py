@@ -1,6 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
-
+from pydantic import BaseModel
 
 
 class AuthRegister(BaseModel):
@@ -11,9 +10,8 @@ class AuthRegister(BaseModel):
 
 class AuthLogin(BaseModel):
     phone: str
-    
-    
+
+
 class AuthOut(BaseModel):
     access_token: str
     token_type: str
-    
