@@ -28,7 +28,7 @@ async def register(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Такой email уже существует",
+            detail="Такой номер уже существует",
         )
 
     hashed_password = auth_utils.hash_password(user.password)
@@ -68,7 +68,7 @@ async def login(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Неправильный email или пароль",
+            detail="Неправильный номер или пароль",
         )
 
     access_token = auth_utils.create_access_token(data={"sub": str(existing_user.id)})
