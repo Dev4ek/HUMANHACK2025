@@ -25,10 +25,8 @@ def upgrade() -> None:
     sa.Column('employee_id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('first_name', sa.String(length=100), nullable=False),
     sa.Column('last_name', sa.String(length=100), nullable=False),
-    sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('phone', sa.String(length=20), nullable=False),
     sa.PrimaryKeyConstraint('employee_id'),
-    sa.UniqueConstraint('email'),
     sa.UniqueConstraint('phone')
     )
     op.create_table('enterprise',
