@@ -18,14 +18,13 @@ class Document(Base):
     document_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sender_id: Mapped[int] = mapped_column(Integer, ForeignKey("employee.employee_id"), nullable=False)
     enterprise_id: Mapped[int] = mapped_column(Integer, ForeignKey("enterprise.enterprise_id"), nullable=False)
-
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[DocumentStatus] = mapped_column(SAEnum(DocumentStatus), nullable=False, default=DocumentStatus.pending)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
 
+    sender: Mapped["Employee"] = relationship("Employee", back_populates="documents_sent")
     enterprise: Mapped["Enterprise"] = relationship("Enterprise", back_populates="documents")
-    sender: Mapped["Employee"] = relationship("Employee")
 
     @classmethod
     async def create(cls, session: AsyncSession, **kwargs) -> "Document":

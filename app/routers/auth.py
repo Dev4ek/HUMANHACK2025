@@ -33,7 +33,7 @@ async def verify_code(phone: str, code: str,session: SessionDep):
     user_db = await Users.get_by_phone(
         session=session,
         phone=phone
-        )
+    )
 
     if not user_db:
         stored = verification_codes.get(phone)

@@ -5,29 +5,19 @@ from typing import List, Optional
 from datetime import datetime
 from app.base import Base
 
-
+# Модель таблицы enterprise
 class Enterprise(Base):
     __tablename__ = "enterprise"
 
     enterprise_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     boss_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("employee.employee_id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
 
-    boss: Mapped[Optional["Employee"]] = relationship("Employee", foreign_keys=[boss_id])
-
+    boss: Mapped[Optional["Employee"]] = relationship("Employee", back_populates="enterprises_boss", foreign_keys=[boss_id])
     departments: Mapped[List["Department"]] = relationship("Department", back_populates="enterprise", cascade="all, delete-orphan")
-
-    employees: Mapped[List["Employee"]] = relationship(
-        "Employee",
-        secondary="department",  
-        primaryjoin="Enterprise.enterprise_id==Department.enterprise_id",
-        secondaryjoin="Department.department_id==Employee.department_id",
-        viewonly=True
-    )
-
     documents: Mapped[List["Document"]] = relationship("Document", back_populates="enterprise", cascade="all, delete-orphan")
-
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    
 
     @classmethod
     async def create(cls, session: AsyncSession, **kwargs) -> "Enterprise":

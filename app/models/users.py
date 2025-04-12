@@ -5,7 +5,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.base import Base
 
-
 class Users(Base):
     __tablename__ = "users"
 
@@ -13,26 +12,14 @@ class Users(Base):
     phone: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     first_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     last_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
-
-    # Связь 1-1 с Employee
-    employee: Mapped[Optional["Employee"]] = relationship(
-        "Employee",
-        back_populates="user",
-        uselist=False
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    # Связь с документами отправленными этим юзером (через Employee)
-    documents: Mapped[List["Document"]] = relationship(
-        "Document",
-        secondary="employee",
-        primaryjoin="Users.id==Employee.employee_id",
-        secondaryjoin="Employee.employee_id==Document.sender_id",
-        viewonly=True,
-    )
+    # Связь "один к одному" с Employee
+    employee: Mapped[Optional["Employee"]] = relationship("Employee", back_populates="user", uselist=False)
 
     # CRUD методы:
     @classmethod

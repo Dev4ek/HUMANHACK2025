@@ -5,8 +5,7 @@ from app.base import Base
 
 if TYPE_CHECKING:
     from app.models import Enterprise, Employee
-
-
+    
 class Department(Base):
     __tablename__ = "department"
 

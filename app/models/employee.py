@@ -6,18 +6,21 @@ from typing import Optional, List
 from app.base import Base
 
 
+
+# Модель таблицы employee
 class Employee(Base):
     __tablename__ = "employee"
 
     employee_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
     position: Mapped[str] = mapped_column(String(255), nullable=False)
     department_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("department.department_id"), nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
 
     user: Mapped["Users"] = relationship("Users", back_populates="employee")
     department: Mapped[Optional["Department"]] = relationship("Department", back_populates="employees")
-
+    enterprises_boss: Mapped[List["Enterprise"]] = relationship("Enterprise", back_populates="boss", foreign_keys="Enterprise.boss_id")
+    documents_sent: Mapped[List["Document"]] = relationship("Document", back_populates="sender")
+    
     @classmethod
     async def create(cls, session: AsyncSession, **kwargs) -> "Employee":
         employee = cls(**kwargs)
