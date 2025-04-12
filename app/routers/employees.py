@@ -131,7 +131,7 @@ async def assign_employee_to_department(
     await session.commit()
     return {"message": "Сотрудник успешно назначен в отдел"}
 
-@router_employees.put(
+@router_employees.patch(
     "/{employee_id}/enterprise/{enterprise_id}",
     summary="Обновить роль сотрудника в предприятии"
 )
@@ -153,7 +153,7 @@ async def update_employee_enterprise_role(
     await session.commit()
     return {"message": "Роль успешно обновлена"}
 
-@router_employees.put(
+@router_employees.patch(
     "/{employee_id}/department/{department_id}",
     summary="Обновить роль сотрудника в отделе"
 )
