@@ -44,7 +44,7 @@ async def register(
     await session.refresh(new_user)
     
     code = random.randint(1000, 9999)
-    expiry = datetime.now + datetime.timedelta(minutes=5)
+    expiry = datetime.now() + timedelta(minutes=5)
     verification_codes[new_user.phone] = {'code': str(code), 'expiry': expiry}
     await send_telegram_code(new_user.phone, code)
     return {"detail": "Код отправлен через Telegram-бот"}
@@ -65,10 +65,9 @@ async def request_code(
          )
 
     code = random.randint(1000, 9999)
-    expiry = datetime.now + datetime.timedelta(minutes=5)
+    expiry = datetime.now() + timedelta(minutes=5)
     verification_codes[phone] = {'code': str(code), 'expiry': expiry}
-    
-    send_telegram_code(phone, code)
+    await send_telegram_code(phone, code)
     
     return {"detail": "Код отправлен через Telegram-бот"}
 
