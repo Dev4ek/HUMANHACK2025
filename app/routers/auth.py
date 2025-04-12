@@ -1,5 +1,5 @@
 import random
-import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -12,7 +12,7 @@ router_auth = APIRouter(prefix="/auth", tags=["Авторизация"])
 
 verification_codes = {}
 
-def send_telegram_code(phone: str, code: int):
+async def send_telegram_code(phone: str, code: int):
     print(f"код {code} для телефона {phone}")
 
 @router_auth.post(
@@ -44,9 +44,9 @@ async def register(
     await session.refresh(new_user)
     
     code = random.randint(1000, 9999)
-    expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    expiry = datetime.now + datetime.timedelta(minutes=5)
     verification_codes[new_user.phone] = {'code': str(code), 'expiry': expiry}
-    send_telegram_code(new_user.phone, code)
+    await send_telegram_code(new_user.phone, code)
     return {"detail": "Код отправлен через Telegram-бот"}
 
 @router_auth.post("/request-code")
@@ -65,7 +65,7 @@ async def request_code(
          )
 
     code = random.randint(1000, 9999)
-    expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    expiry = datetime.now + datetime.timedelta(minutes=5)
     verification_codes[phone] = {'code': str(code), 'expiry': expiry}
     
     send_telegram_code(phone, code)
