@@ -14,8 +14,17 @@ class Enterprise(Base):
     boss_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("employee.employee_id"), nullable=True)
 
     boss: Mapped[Optional["Employee"]] = relationship("Employee", foreign_keys=[boss_id])
+
     departments: Mapped[List["Department"]] = relationship("Department", back_populates="enterprise", cascade="all, delete-orphan")
-    employee_associations: Mapped[List["EmployeeEnterprise"]] = relationship("EmployeeEnterprise", back_populates="enterprise", cascade="all, delete-orphan")
+
+    employees: Mapped[List["Employee"]] = relationship(
+        "Employee",
+        secondary="department",  
+        primaryjoin="Enterprise.enterprise_id==Department.enterprise_id",
+        secondaryjoin="Department.department_id==Employee.department_id",
+        viewonly=True
+    )
+
     documents: Mapped[List["Document"]] = relationship("Document", back_populates="enterprise", cascade="all, delete-orphan")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -42,8 +51,7 @@ class Enterprise(Base):
 
     @classmethod
     async def get_by_id(cls, session: AsyncSession, enterprise_id: int) -> Optional["Enterprise"]:
-        result = await session.get(cls, enterprise_id)
-        return result
+        return await session.get(cls, enterprise_id)
 
     @classmethod
     async def get_all(cls, session: AsyncSession) -> List["Enterprise"]:
