@@ -7,8 +7,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=flagman
       - TZ=Europe/Moscow
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+   
     networks: 
       - general
     restart: always
