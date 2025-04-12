@@ -20,7 +20,7 @@ async def register(
 ):
     stmt = (
         select(Users)
-        .where(Users.email == user.email)
+        .where(Users.phone == user.phone)
     )
     result = await session.execute(stmt)
     existing_user = result.scalars().first()
