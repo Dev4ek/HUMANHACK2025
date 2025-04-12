@@ -1,7 +1,6 @@
 import random
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
 
 from app.models.users import Users
 from app.dependencies import SessionDep
@@ -20,10 +19,6 @@ def send_telegram_code(phone: str, code: int):
 
 @router_auth.post("/request-code")
 async def request_code(phone: str, session: SessionDep):
-    stmt = select(Users).where(Users.phone == phone)
-    result = await session.execute(stmt)
-    user = result.scalars().first()
-
     code = random.randint(1000, 9999)
     expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
     verification_codes[phone] = {"code": str(code), "expiry": expiry, "is_verified": False}
@@ -35,9 +30,10 @@ async def request_code(phone: str, session: SessionDep):
 
 @router_auth.post("/verify-code")
 async def verify_code(phone: str, code: str,session: SessionDep):
-    stmt = select(Users).where(Users.phone == phone)
-    result = await session.execute(stmt)
-    user_db = result.scalars().first()
+    user_db = await Users.get_by_phone(
+        session=session,
+        phone=phone
+        )
 
     if not user_db:
         stored = verification_codes.get(phone)
@@ -64,21 +60,22 @@ async def register(user: auth_schemas.AuthRegister, session: SessionDep):
     if not stored or not stored.get('is_verified'):
         raise HTTPException(status_code=400, detail="Сначала подтвердите код")
 
-    stmt = select(Users).where(Users.phone == user.phone)
-    result = await session.execute(stmt)
-    existing_user = result.scalars().first()
+    existing_user = await Users.get_by_phone(
+        session=session,
+        phone=user.phone
+        )
+
 
     if existing_user:
         raise HTTPException(status_code=400, detail="Такой номер уже существует")
 
-    new_user = Users(
+    new_user = await Users.create(
+        session=session,
         phone=user.phone,
         first_name=user.first_name,
         last_name=user.last_name,
     )
-    session.add(new_user)
-    await session.commit()
-    await session.refresh(new_user)
+   
 
     del verification_codes[user.phone]
 

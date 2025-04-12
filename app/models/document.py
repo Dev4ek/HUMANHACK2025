@@ -1,69 +1,58 @@
-import random
-from typing import List, Optional
-from sqlalchemy import (
-    ForeignKey,
-    String,
-    Integer,
-    Boolean,
-    Numeric,
-    BigInteger,
-    Sequence,
-    Text,
-    and_,
-    func,
-    or_,
-    select,
-    text,
-    update,
-    DateTime,
-    UUID as PostgresUUID,
-    or_,
-    JSON
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
-from app.base import Base
-from datetime import datetime
+import enum
+from sqlalchemy import Integer, String, Text, ForeignKey, Enum as SAEnum, DateTime, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import TYPE_CHECKING
-from datetime import datetime, timedelta
-from app.utils.main import get_moscow_time
+from datetime import datetime
+from typing import Optional, List
+from app.base import Base
 
-if TYPE_CHECKING:
-    from app.models import Employee
+
+class DocumentStatus(enum.Enum):
+    pending = "Ожидает подписание"
+    signed = "Подписан"
+
 
 class Document(Base):
     __tablename__ = "document"
 
     document_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sender_id: Mapped[int] = mapped_column(Integer, ForeignKey("employee.employee_id"), nullable=False)
+    enterprise_id: Mapped[int] = mapped_column(Integer, ForeignKey("enterprise.enterprise_id"), nullable=False)
+
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[DocumentStatus] = mapped_column(SAEnum(DocumentStatus), nullable=False, default=DocumentStatus.pending)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    status: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    sender: Mapped["Employee"] = relationship("Employee", back_populates="documents_created")
-    recipients: Mapped[List["DocumentRecipient"]] = relationship("DocumentRecipient", back_populates="document", cascade="all, delete-orphan")
-    signatures: Mapped[List["DocumentSignature"]] = relationship("DocumentSignature", back_populates="document", cascade="all, delete-orphan")
+    enterprise: Mapped["Enterprise"] = relationship("Enterprise", back_populates="documents")
+    sender: Mapped["Employee"] = relationship("Employee")
 
-class DocumentRecipient(Base):
-    __tablename__ = "document_recipient"
+    @classmethod
+    async def create(cls, session: AsyncSession, **kwargs) -> "Document":
+        document = cls(**kwargs)
+        session.add(document)
+        await session.commit()
+        await session.refresh(document)
+        return document
 
-    document_id: Mapped[int] = mapped_column(Integer, ForeignKey("document.document_id"), primary_key=True)
-    recipient_id: Mapped[int] = mapped_column(Integer, ForeignKey("employee.employee_id"), primary_key=True)
-    sent_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    async def update(self, session: AsyncSession, **kwargs) -> "Document":
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        await session.commit()
+        await session.refresh(self)
+        return self
 
-    document: Mapped["Document"] = relationship("Document", back_populates="recipients")
-    recipient: Mapped["Employee"] = relationship("Employee", back_populates="document_recipients")
+    async def delete(self, session: AsyncSession):
+        await session.delete(self)
+        await session.commit()
 
-class DocumentSignature(Base):
-    __tablename__ = "document_signature"
+    @classmethod
+    async def get_by_id(cls, session: AsyncSession, document_id: int) -> Optional["Document"]:
+        result = await session.get(cls, document_id)
+        return result
 
-    document_id: Mapped[int] = mapped_column(Integer, ForeignKey("document.document_id"), primary_key=True)
-    employee_id: Mapped[int] = mapped_column(Integer, ForeignKey("employee.employee_id"), primary_key=True)
-    signature: Mapped[str] = mapped_column(String(255), nullable=False)
-    signed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
-    confirmation_method: Mapped[str] = mapped_column(String(50), nullable=False)
-
-    document: Mapped["Document"] = relationship("Document", back_populates="signatures")
-    employee: Mapped["Employee"] = relationship("Employee", back_populates="signatures")
+    @classmethod
+    async def get_all(cls, session: AsyncSession) -> List["Document"]:
+        result = await session.execute(select(cls))
+        return result.scalars().all()

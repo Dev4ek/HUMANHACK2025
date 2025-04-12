@@ -1,66 +1,49 @@
-import random
-from typing import List, Optional
-from sqlalchemy import (
-    ForeignKey,
-    String,
-    Integer,
-    Boolean,
-    Numeric,
-    BigInteger,
-    Sequence,
-    and_,
-    func,
-    or_,
-    select,
-    text,
-    update,
-    DateTime,
-    UUID as PostgresUUID,
-    or_,
-    JSON
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
-from app.base import Base
-from datetime import datetime
+from sqlalchemy import Integer, String, DateTime, ForeignKey, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import TYPE_CHECKING
-from datetime import datetime, timedelta
-from app.utils.main import get_moscow_time
+from datetime import datetime
+from typing import Optional, List
+from app.base import Base
 
-if TYPE_CHECKING:
-    from app.models import Document, DocumentSignature, DocumentRecipient, Enterprise, Department
-    
+
 class Employee(Base):
     __tablename__ = "employee"
 
-    employee_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    employee_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
+    position: Mapped[str] = mapped_column(String(255), nullable=False)
+    department_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("department.department_id"), nullable=True)
 
-    enterprise_associations: Mapped[List["EmployeeEnterprise"]] = relationship("EmployeeEnterprise", back_populates="employee", cascade="all, delete-orphan")
-    department_associations: Mapped[List["EmployeeDepartment"]] = relationship("EmployeeDepartment", back_populates="employee", cascade="all, delete-orphan")
-    documents_created: Mapped[List["Document"]] = relationship("Document", back_populates="sender", cascade="all, delete-orphan")
-    signatures: Mapped[List["DocumentSignature"]] = relationship("DocumentSignature", back_populates="employee", cascade="all, delete-orphan")
-    document_recipients: Mapped[List["DocumentRecipient"]] = relationship("DocumentRecipient", back_populates="recipient", cascade="all, delete-orphan")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
-class EmployeeEnterprise(Base):
-    __tablename__ = "employee_enterprise"
+    user: Mapped["Users"] = relationship("Users", back_populates="employee")
+    department: Mapped[Optional["Department"]] = relationship("Department", back_populates="employees")
 
-    employee_id: Mapped[int] = mapped_column(Integer, ForeignKey("employee.employee_id"), primary_key=True)
-    enterprise_id: Mapped[int] = mapped_column(Integer, ForeignKey("enterprise.enterprise_id"), primary_key=True)
-    role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    @classmethod
+    async def create(cls, session: AsyncSession, **kwargs) -> "Employee":
+        employee = cls(**kwargs)
+        session.add(employee)
+        await session.commit()
+        await session.refresh(employee)
+        return employee
 
-    employee: Mapped["Employee"] = relationship("Employee", back_populates="enterprise_associations")
-    enterprise: Mapped["Enterprise"] = relationship("Enterprise", back_populates="employee_associations")
+    async def update(self, session: AsyncSession, **kwargs) -> "Employee":
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+        await session.commit()
+        await session.refresh(self)
+        return self
 
-class EmployeeDepartment(Base):
-    __tablename__ = "employee_department"
+    async def delete(self, session: AsyncSession):
+        await session.delete(self)
+        await session.commit()
 
-    employee_id: Mapped[int] = mapped_column(Integer, ForeignKey("employee.employee_id"), primary_key=True)
-    department_id: Mapped[int] = mapped_column(Integer, ForeignKey("department.department_id"), primary_key=True)
-    role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    @classmethod
+    async def get_by_id(cls, session: AsyncSession, employee_id: int) -> Optional["Employee"]:
+        result = await session.get(cls, employee_id)
+        return result
 
-    employee: Mapped["Employee"] = relationship("Employee", back_populates="department_associations")
-    department: Mapped["Department"] = relationship("Department", back_populates="employee_associations")
-
+    @classmethod
+    async def get_all(cls, session: AsyncSession) -> List["Employee"]:
+        result = await session.execute(select(cls))
+        return result.scalars().all()
