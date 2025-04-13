@@ -76,7 +76,7 @@ async def me_info(
 
 @router_employees.post(
     "/boss",
-    response_model=employees_schemas.EmployeeFullInfoResponse,
+    # response_model=employees_schemas.EmployeeFullInfoResponse,
     summary="Сделать себя биг босом всего"
 )
 async def big_boss(
