@@ -48,6 +48,7 @@ class EmployeeInfo(BaseModel):
     id: int
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    big_boss: bool
     phone: str
 
 class EmployeeFullInfoResponse(BaseModel):

@@ -6,7 +6,6 @@ class DepartmentCreate(BaseModel):
     name: str
     enterprise_id: int
 
-
 class DepartmentUpdate(BaseModel):
     name: Optional[str] = None
 

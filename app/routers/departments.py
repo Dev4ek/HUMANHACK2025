@@ -74,7 +74,6 @@ async def get_department(
 
     return department
 
-
 @router_departments.patch(
     "/{departament_id}",
     response_model=departaments_schemas.DepartmentResponse,

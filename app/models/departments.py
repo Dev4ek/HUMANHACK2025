@@ -15,6 +15,9 @@ class Departaments(Base):
     name: Mapped[str] = mapped_column(String(255))
     enterprise_id: Mapped[int] = mapped_column(Integer, ForeignKey("enterprises.id"))
 
+    boss_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("employees.id"), nullable=True)
+
+    boss: Mapped[Optional["Employees"]] = relationship("Employees", back_populates="departaments_boss")
     enterprise: Mapped["Enterprises"] = relationship("Enterprises", back_populates="departments")
     employees: Mapped[List["DepartamentsEmployees"]] = relationship("DepartamentsEmployees", back_populates="department")
 

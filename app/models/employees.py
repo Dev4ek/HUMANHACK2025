@@ -7,7 +7,7 @@ from app.base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models import Documents, DepartamentsEmployees, EnterprisesEmployees, Messages
+    from app.models import Documents, DepartamentsEmployees, EnterprisesEmployees, Messages, Departaments
 
 class Employees(Base):
     __tablename__ = "employees"
@@ -20,6 +20,7 @@ class Employees(Base):
     
     big_boss: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
     
+    departaments_boss: Mapped[List["Departaments"]] = relationship("Departaments", foreign_keys="[Departaments.boss_id]", back_populates="boss")
     enterprises: Mapped[List["EnterprisesEmployees"]] = relationship("EnterprisesEmployees", back_populates="employee")
     departments_assoc: Mapped[List["DepartamentsEmployees"]] = relationship("DepartamentsEmployees", back_populates="employee")
     documents_sent: Mapped[List["Documents"]] = relationship("Documents", foreign_keys="[Documents.sender_id]", back_populates="sender")

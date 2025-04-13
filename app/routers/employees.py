@@ -65,7 +65,26 @@ async def me_info(
             "first_name": current_user.first_name,
             "last_name": current_user.last_name,
             "phone": current_user.phone,
+            "big_boss": current_user.big_boss,
         },
         "enterprises": list(enterprises_dict.values())
     }
     return result
+
+
+
+
+@router_employees.post(
+    "/boss",
+    response_model=employees_schemas.EmployeeFullInfoResponse,
+    summary="Сделать себя биг босом всего"
+)
+async def big_boss(
+    session: SessionDep,
+    current_user: UserTokenDep  
+):
+    current_user.big_boss = True
+    await session.commit()
+    return {
+        "message": "успешно"
+    }  
