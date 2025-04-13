@@ -8,6 +8,7 @@ class EmployeeResponse(BaseModel):
     phone: str
     first_name: str
     last_name: str
+    big_boss: Optional[bool] = None
     
     
 class EmployeeCreate(BaseModel):
