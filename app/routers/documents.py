@@ -149,6 +149,7 @@ async def sign_document(
     signature_source = f"{document.id}-{payload.code}-{current_user.phone}"
     signature = hashlib.sha256(signature_source.encode()).hexdigest()
     
+    
     document.signature = signature
     document.status = "signed"
     document.signed_at = main_utils.get_moscow_time()
