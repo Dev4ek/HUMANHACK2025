@@ -38,3 +38,12 @@ class Employees(Base):
         )
         res = await session.execute(stmt)
         return res.scalar_one_or_none() 
+    
+    @staticmethod
+    async def get_by_id(session: AsyncSession, employee_id: int) -> "Employees":
+        stmt = (
+            select(Employees)
+            .where(Employees.id == employee_id)
+        )
+        res = await session.execute(stmt)
+        return res.scalar_one_or_none()
