@@ -44,3 +44,29 @@ async def get_current_user(
     return user
 
 UserTokenDep = Annotated[Employees, Depends(get_current_user)]
+
+
+
+async def get_current_user_from_token(token: str, session: AsyncSession) -> Employees:
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        user_id_raw = payload.get("sub")
+        if user_id_raw is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Невалидный токен: отсутствует идентификатор пользователя.",
+            )
+        user_id = int(user_id_raw)
+    except jwt.PyJWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Токен не найден или некорректен.",
+        ) from e
+
+    user = await session.get(Employees, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Пользователь не найден",
+        )
+    return user

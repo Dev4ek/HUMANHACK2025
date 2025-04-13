@@ -7,7 +7,7 @@ from app.base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.models import Departaments, Enterprises, Documents, DepartamentsEmployees, EnterprisesEmployees
+    from app.models import Documents, DepartamentsEmployees, EnterprisesEmployees, Messages
 
 
 class Employees(Base):
@@ -22,6 +22,9 @@ class Employees(Base):
     departments_assoc: Mapped[List["DepartamentsEmployees"]] = relationship("DepartamentsEmployees", back_populates="employee")
     documents_sent: Mapped[List["Documents"]] = relationship("Documents", foreign_keys="[Documents.sender_id]", back_populates="sender")
     documents_received: Mapped[List["Documents"]] = relationship("Documents", foreign_keys="[Documents.recipient_id]", back_populates="recipient")
+
+    messages_sent: Mapped[List["Messages"]] = relationship("Messages", foreign_keys="[Messages.sender_id]", back_populates="sender")
+    messages_received: Mapped[List["Messages"]] = relationship("Messages", foreign_keys="[Messages.recipient_id]", back_populates="recipient")
 
     @staticmethod
     async def get_all(session: AsyncSession) -> List['Employees']:

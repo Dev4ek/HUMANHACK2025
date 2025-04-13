@@ -9,7 +9,7 @@ from app.config import settings
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
-from app.routers import router_auth, router_enterprises, router_departments, router_employees, router_documents
+from app.routers import router_auth, router_enterprises, router_departments, router_employees, router_documents, router_chat
 
 
 app = FastAPI(
@@ -36,6 +36,7 @@ app.include_router(router_employees)
 app.include_router(router_enterprises)
 app.include_router(router_departments)
 app.include_router(router_documents)
+app.include_router(router_chat)
 
 
 # Обработка исключений
