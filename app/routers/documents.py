@@ -134,6 +134,9 @@ async def sign_document(
     
     if document.status.value == "Подписан":
         raise HTTPException(status_code=400, detail="Документ уже подписан")
+
+    if document.status.value == "Отклонён":
+        raise HTTPException(status_code=400, detail="Документ был отклонен")
     
     stored = verification_codes.get(current_user.phone)
     if not stored:
@@ -152,6 +155,46 @@ async def sign_document(
     
     document.signature = signature
     document.status = "signed"
+    document.signed_at = main_utils.get_moscow_time()
+    
+    await session.commit()
+    await session.refresh(document)
+    return document
+
+@router_documents.patch(
+    "/{document_id}/cancel",
+    response_model=documents_schemas.DocumentResponse,
+    summary="Отклонить документ с подтверждением смс кодом"
+)
+async def sign_document(
+    document_id: int,
+    payload: documents_schemas.DocumentSign,
+    session: SessionDep,
+    current_user: UserTokenDep
+):
+    document = await Documents.get_by_id(session, document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Документ не найден")
+    
+    # Подпись может выполнять только получатель
+    if document.recipient_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Нет прав на отклонение этого документа")
+    
+    if document.status.value == "Отклонён":
+        raise HTTPException(status_code=400, detail="Документ уже отклонен")
+    
+    stored = verification_codes.get(current_user.phone)
+    if not stored:
+        raise HTTPException(status_code=401, detail="Код не найден")
+    if stored['code'] != payload.code:
+        raise HTTPException(status_code=401, detail="Неверный код")
+    if stored['expire'] < main_utils.get_moscow_time():
+        del verification_codes[current_user.phone]
+        raise HTTPException(status_code=401, detail="Код устарел")
+    
+    del verification_codes[current_user.phone]
+    
+    document.status = "cancelled"
     document.signed_at = main_utils.get_moscow_time()
     
     await session.commit()
