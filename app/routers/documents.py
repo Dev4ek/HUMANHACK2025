@@ -1,5 +1,5 @@
 import random
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from typing import List
 import datetime
 import hashlib
@@ -25,12 +25,11 @@ async def send_document(
     session: SessionDep,
     current_user: UserTokenDep,
     recipient_id: int = Form(...),
-    upload_document: UploadFile = Form(...),
+    upload_document: UploadFile = File(...),
 ):
     recipient = await Employees.get_by_id(session, recipient_id)
     if not recipient:
         raise HTTPException(status_code=404, detail="Получатель не найден")
-    
     
     file_path = await documents_utils.save_file_to_static(upload_document)
     new_document = Documents(
@@ -90,18 +89,24 @@ async def get_document(
 
 
 
-verification_codes = []
+verification_codes = {}
 @router_documents.post(
     "/sign/request-code",
     summary="Отправить код на подтверждение подписи"
 )
 async def request_code(
     payload: documents_schemas.DocumentSignRequestCode,
+    current_user: UserTokenDep,
     session: SessionDep
 ):
+    
+    ducument = await Documents.get_by_id(session, payload.document_id)
+    if ducument.status.value == "Подписан":
+        raise HTTPException(status_code=400, detail="Документ уже подписан")
+        
     code = random.randint(1000, 9999)
     expire = main_utils.get_moscow_time() + datetime.timedelta(minutes=10)
-    verification_codes[payload.phone] = {"code": str(code), "expire": expire, "is_verified": False}
+    verification_codes[current_user.phone] = {"code": code, "expire": expire, "is_verified": False}
 
     return {
         "detail": "Код на подписание отправлен",
@@ -116,8 +121,8 @@ async def request_code(
 async def sign_document(
     document_id: int,
     payload: documents_schemas.DocumentSign,
-    session: AsyncSession = Depends(SessionDep),
-    current_user: Employees = Depends(UserTokenDep)
+    session: SessionDep,
+    current_user: UserTokenDep
 ):
     document = await Documents.get_by_id(session, document_id)
     if not document:
@@ -127,9 +132,8 @@ async def sign_document(
     if document.recipient_id != current_user.id:
         raise HTTPException(status_code=403, detail="Нет прав на подписание этого документа")
     
-    if document.status == "signed":
+    if document.status.value == "Подписан":
         raise HTTPException(status_code=400, detail="Документ уже подписан")
-    
     
     stored = verification_codes.get(current_user.phone)
     if not stored:
@@ -139,8 +143,8 @@ async def sign_document(
     if stored['expire'] < main_utils.get_moscow_time():
         del verification_codes[current_user.phone]
         raise HTTPException(status_code=401, detail="Код устарел")
-
-    stored['is_verified'] = True
+    
+    del verification_codes[current_user.phone]
     
     signature_source = f"{document.id}-{payload.code}-{current_user.phone}"
     signature = hashlib.sha256(signature_source.encode()).hexdigest()

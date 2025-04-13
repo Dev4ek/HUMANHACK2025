@@ -44,7 +44,7 @@ class Documents(Base):
     async def get_by_recipient_id(session: AsyncSession, recipient_id: int) -> List['Documents']:
         stmt = (
             select(Documents)
-            .where(Documents.recipient == recipient_id)
+            .where(Documents.recipient_id == recipient_id)
         )
         res = await session.execute(stmt)
         return res.scalars().all()

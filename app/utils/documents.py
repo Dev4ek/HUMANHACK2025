@@ -15,4 +15,4 @@ async def save_file_to_static(file: UploadFile, destination: str = "static") -> 
         content = await file.read() 
         await out_file.write(content)
         
-    return unique_filename
+    return "/static/" +  unique_filename

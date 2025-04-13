@@ -4,13 +4,13 @@ from pydantic import BaseModel
 
 
 class DocumentResponse(BaseModel):
-    document_id: int
+    id: int
     sender_id: int
     recipient_id: int
     file_path: str
     status: str
     created_at: datetime
-    signed_at: datetime
+    signed_at: Optional[datetime]
 
 class DocumentSend(BaseModel):
     document_id: int
