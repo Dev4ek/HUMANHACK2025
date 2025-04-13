@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, DateTime, ForeignKey, func, select, text
+from sqlalchemy import Integer, String, DateTime, ForeignKey, func, or_, select, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
@@ -21,5 +21,20 @@ class Messages(Base):
     sender: Mapped["Employees"] = relationship("Employees",foreign_keys=[sender_id], back_populates="messages_sent")
     recipient: Mapped["Employees"] = relationship("Employees",foreign_keys=[recipient_id], back_populates="messages_received")
 
-
-    
+    @staticmethod
+    async def get_history_employees(session: AsyncSession, sender_id: int, recipient_id: int) -> List['Messages']:
+        stmt = (
+                select(Messages)
+                .where(
+                    or_(
+                        (Messages.sender_id == sender_id) & (Messages.recipient_id == recipient_id),
+                        (Messages.sender_id == recipient_id) & (Messages.recipient_id == sender_id)
+                    )
+                )
+                .order_by(Messages.created_at.asc())
+            )
+        result = await session.execute(stmt)
+        messages = result.scalars().all()
+        
+        return messages
+        

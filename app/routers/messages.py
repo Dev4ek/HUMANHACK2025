@@ -1,10 +1,12 @@
 import json
+from typing import List
 from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import sessionmaker
-from app.dependencies import get_current_user_from_token
+from app.dependencies import get_current_user_from_token, SessionDep, UserTokenDep
 from app.models import Messages, Employees
 from app.utils import messages as messages_utils
+from app.schemas import messages as messages_schemas
 from starlette.datastructures import MutableHeaders
 from starlette.requests import Request
 
@@ -59,3 +61,18 @@ async def chat_endpoint(websocket: WebSocket):
             )
     except WebSocketDisconnect:
         manager.disconnect(sender_id)
+        
+
+@router_chat.get(
+    "/history/{employee_id}",
+    response_model=List[messages_schemas.MessageResponse],
+    summary="Получить историю сообщений с конкретным пользователем"
+)
+async def get_chat_history(
+    employee_id: int,
+    session: SessionDep,
+    current_user: UserTokenDep,
+):
+    
+    messages = await Messages.get_history_employees(session, current_user.id, employee_id)
+    return messages
