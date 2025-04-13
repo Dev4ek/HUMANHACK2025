@@ -72,7 +72,17 @@ async def me_info(
     return result
 
 
-
+@router_employees.get(
+    "/{employee_id}",
+    response_model=employees_schemas.EmployeeResponse,
+    summary="Получить инфу о пользователе"
+)
+async def me_info(
+    employee_id: int,
+    session: SessionDep,
+):
+    res = await Employees.get_by_id(session, employee_id)
+    return res
 
 @router_employees.post(
     "/boss",

@@ -51,7 +51,8 @@ async def create_department(
         
     new_department = Departaments(
         name=payload.name,
-        enterprise_id=payload.enterprise_id
+        enterprise_id=payload.enterprise_id,
+        boss_id=payload.boss_id
     )
     session.add(new_department)
     await session.commit()
@@ -89,7 +90,10 @@ async def update_department(
         raise HTTPException(status_code=404, detail="Отдел не найден")
     
     department.name = payload.name or department.name
-    
+    if payload.name is not None:
+        department.name = payload.name
+    if payload.boss_id is not None:
+        department.boss_id = payload.boss_id
     await session.commit()
     await session.refresh(department)
     return department
