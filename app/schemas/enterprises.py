@@ -4,6 +4,7 @@ from .employees import EmployeeResponse
 
 class EnterpriseCreate(BaseModel):
     name: str
+    boss_id: Optional[int] = None
 
 class EnterpriseResponse(BaseModel):
     id: int
@@ -20,7 +21,8 @@ class EnterprisesEmployees(BaseModel):
     enterprise_id: int
     
 class EnterpriseUpdate(BaseModel):
-    name: str
+    name: Optional[str] = None
+    boss_id: Optional[int] = None
     
 class EnterprisesEmployeesOut(BaseModel):
     id: int

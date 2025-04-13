@@ -87,15 +87,18 @@ async def get_enterprise(
 )
 async def update_enterprise(
     enterprise_id: int,
-    enterprise_update: enterprises_schemas.EnterpriseUpdate,
+    payload: enterprises_schemas.EnterpriseUpdate,
     session: SessionDep,
 ):
     enterprise = await Enterprises.get_by_id(session, enterprise_id)
     if not enterprise:
         raise HTTPException(status_code=404, detail="Предприятие не найдено")
 
-    enterprise.name = enterprise_update.name or enterprise.name
-
+    if payload.name is not None:
+        enterprise.name = payload.name
+    if payload.boss_id is not None:
+        enterprise.boss_id = payload.boss_id
+        
     await session.commit()
     await session.refresh(enterprise)
     return enterprise
@@ -171,28 +174,3 @@ async def add_employees_to_enterprise(
     await session.delete(res)
     await session.commit()
 
-
-@router_enterprises.patch(
-    "/{enterprise_id}/boss",
-    response_model=enterprises_schemas.EnterpriseResponse,
-    summary="Назначить или изменить босса предприятия"
-)
-async def assign_enterprise_boss(
-    enterprise_id: int,
-    payload: enterprises_schemas.BossAssign,
-    session: SessionDep,
-):
-    enterprise = await Enterprises.get_by_id(session, enterprise_id)
-    if not enterprise:
-        raise HTTPException(status_code=404, detail="Предприятие не найдено")
-        
-    stmt = select(Employees).where(Employees.id == payload.boss_id)
-    result = await session.execute(stmt)
-    boss = result.scalar_one_or_none()
-    if not boss:
-        raise HTTPException(status_code=404, detail="Сотрудник-босс не найден")
-    
-    enterprise.boss_id = payload.boss_id
-    await session.commit()
-    await session.refresh(enterprise)
-    return enterprise
