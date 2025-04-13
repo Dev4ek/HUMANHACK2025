@@ -1,6 +1,6 @@
 import random
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from typing import List
+from typing import List, Optional
 import datetime
 import hashlib
 
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
 from app.dependencies import SessionDep, UserTokenDep
-from app.models import Documents, Employees
+from app.models import Documents, Employees, DepartamentsEmployees
 from app.schemas import documents as documents_schemas
 from app.utils import documents as documents_utils
 from app.utils import main as main_utils
@@ -200,3 +200,68 @@ async def sign_document(
     await session.commit()
     await session.refresh(document)
     return document
+
+
+
+@router_documents.post(
+    "/bulk",
+    response_model=List[documents_schemas.DocumentResponse],
+    summary="Массовая рассылка документа сотрудникам",
+    status_code=status.HTTP_201_CREATED,
+    description=
+"""
+Делает массовую рассылку документа:
+- Если `department_id` указан, документ получают все сотрудники этого отдела.
+- Если `send_to_all=True`, документ получают все сотрудники
+"""
+)
+async def send_documents_bulk(
+    session: SessionDep,
+    current_user: UserTokenDep,
+    upload_document: UploadFile = File(...),
+    department_id: Optional[int] = Form(None),
+    send_to_all: bool = Form(False),
+):
+    if not department_id and not send_to_all:
+        raise HTTPException(
+            status_code=400, 
+            detail="Нужно указать department_id или send_to_all."
+        )
+        
+    if department_id and send_to_all:
+        raise HTTPException(
+            status_code=400, 
+            detail="Нужно указать только department_id или send_to_all."
+        )
+    
+    
+    file_path = await documents_utils.save_file_to_static(upload_document)
+    employees_to_send: List[Employees] = []
+    if department_id:
+        dept_employees = await DepartamentsEmployees.get_all_by_departament_id(session, department_id)
+        employees_to_send = [de.employee for de in dept_employees if de.employee]
+    
+    if send_to_all:
+        employees_to_send = await Employees.get_all(session)
+    
+    employees_to_send = [emp for emp in employees_to_send if emp.id != current_user.id]
+
+    if not employees_to_send:
+        return []
+
+    new_documents = []
+    for emp in employees_to_send:
+        doc = Documents(
+            sender_id=current_user.id,
+            recipient_id=emp.id,
+            status="pending",
+            file_path=file_path
+        )
+        new_documents.append(doc)
+        session.add(doc)
+    
+    await session.commit()
+    for doc in new_documents:
+        await session.refresh(doc)
+
+    return new_documents

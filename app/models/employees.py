@@ -1,4 +1,4 @@
-from sqlalchemy import ARRAY, Integer, String, DateTime, ForeignKey, select
+from sqlalchemy import ARRAY, Boolean, Integer, String, DateTime, ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
@@ -9,14 +9,16 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models import Documents, DepartamentsEmployees, EnterprisesEmployees, Messages
 
-
 class Employees(Base):
     __tablename__ = "employees"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    
     phone: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     first_name: Mapped[Optional[str]] = mapped_column(String(50))
     last_name: Mapped[Optional[str]] = mapped_column(String(50))
+    
+    big_boss: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false')
     
     enterprises: Mapped[List["EnterprisesEmployees"]] = relationship("EnterprisesEmployees", back_populates="employee")
     departments_assoc: Mapped[List["DepartamentsEmployees"]] = relationship("DepartamentsEmployees", back_populates="employee")
