@@ -1,120 +1,200 @@
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
-from fastapi import APIRouter, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.dependencies import SessionDep, UserTokenDep
-from app.models import Department, Employee, Enterprise
-from app.schemas import departments as departments_schemas
+from app.models import Departaments, DepartamentsEmployees, Enterprises, Employees, EnterprisesEmployees
+from app.schemas import departaments as departaments_schemas
 
 router_departments = APIRouter(prefix="/departments", tags=["Отделы"])
 
 
 @router_departments.get(
-    "",
-    response_model=List[departments_schemas.DepartmentResponse],
-    summary="Получить список всех отделов",
-    description="Возвращает список всех отделов."
+    "/me",
+    response_model=List[departaments_schemas.DepartmentEmployeeResponse],
+    summary="Получить мои отделы"
 )
-async def list_departments(
+async def list_departments_me(
     session: SessionDep,
     current_user: UserTokenDep
 ):
-    return await Department.get_all(session)
+    res = await DepartamentsEmployees.get_all_by_employee_id(session, current_user.id)
+    return res
 
 
 @router_departments.get(
-    "/{department_id}",
-    response_model=departments_schemas.DepartmentResponse,
-    summary="Получить отдел по ID",
-    description="Возвращает данные отдела по его ID."
+    "",
+    response_model=List[departaments_schemas.DepartmentResponse],
+    summary="Получить список всех отделов"
 )
-async def get_department(
-    department_id: int,
+async def list_departments(
     session: SessionDep,
-    current_user: UserTokenDep
 ):
-    department = await Department.get_by_id(session, department_id)
-    if not department:
-        raise HTTPException(status_code=404, detail="Отдел не найден")
-    return department
-
+    res = await Departaments.get_all(session)
+    return res
 
 @router_departments.post(
     "",
-    response_model=departments_schemas.DepartmentResponse,
+    response_model=departaments_schemas.DepartmentResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Создать отдел",
-    description="Создать новый отдел может только начальник компании."
+    summary="Создать новый отдел в предприятии"
 )
 async def create_department(
-    data: departments_schemas.DepartmentCreate,
+    payload: departaments_schemas.DepartmentCreate,
     session: SessionDep,
-    current_user: UserTokenDep
 ):
-    employee = await Employee.get_by_id(session, current_user.employee_id)
-    if not employee:
-        raise HTTPException(status_code=403, detail="Нет доступа")
+    enterprice_exists = await Enterprises.get_by_id(session, payload.enterprise_id)
+    if not enterprice_exists:
+        raise HTTPException(
+            404, "Предприятие не найдено"
+        )
+        
+    new_department = Departaments(
+        name=payload.name,
+        enterprise_id=payload.enterprise_id
+    )
+    session.add(new_department)
+    await session.commit()
+    await session.refresh(new_department)
+    return new_department
 
-    if not employee.department_id:
-        raise HTTPException(status_code=403, detail="Нет доступа")
 
-    enterprise = await Enterprise.get_by_id(session, employee.department.enterprise_id)
-    if not enterprise or enterprise.boss_id != employee.employee_id:
-        raise HTTPException(status_code=403, detail="Создавать отделы может только начальник компании")
+@router_departments.get(
+    "/{departament_id}",
+    response_model=departaments_schemas.DepartmentResponse,
+    summary="Получить данные отдела предприятия"
+)
+async def get_department(
+    departament_id: int,
+    session: SessionDep,
+):
+    department = await Departaments.get_by_id(session, departament_id=departament_id)
+    if not department:
+        raise HTTPException(status_code=404, detail="Отдел не найден")
 
-    department = await Department.create(session, name=data.name, enterprise_id=enterprise.enterprise_id)
     return department
 
 
 @router_departments.patch(
-    "/{department_id}",
-    response_model=departments_schemas.DepartmentResponse,
-    summary="Редактировать отдел",
-    description="Редактировать отдел может только начальник компании или начальник этого отдела."
+    "/{departament_id}",
+    response_model=departaments_schemas.DepartmentResponse,
+    summary="Обновить данные отдела предприятия"
 )
 async def update_department(
-    department_id: int,
-    data: departments_schemas.DepartmentUpdate,
+    departament_id: int,
+    payload: departaments_schemas.DepartmentUpdate,
     session: SessionDep,
-    current_user: UserTokenDep
 ):
-    department = await Department.get_by_id(session, department_id)
+    department = await Departaments.get_by_id(session, departament_id)
     if not department:
         raise HTTPException(status_code=404, detail="Отдел не найден")
-
-    employee = await Employee.get_by_id(session, current_user.employee_id)
-    if not employee:
-        raise HTTPException(status_code=403, detail="Нет доступа")
-
-    enterprise = await Enterprise.get_by_id(session, department.enterprise_id)
-
-    if enterprise.boss_id != employee.employee_id and department.department_id != employee.department_id:
-        raise HTTPException(status_code=403, detail="Редактировать может только начальник компании или отдела")
-
-    await department.update(session, **data.dict(exclude_unset=True))
+    
+    department.name = payload.name or department.name
+    
+    await session.commit()
+    await session.refresh(department)
     return department
 
 
 @router_departments.delete(
-    "/{department_id}",
+    "/{departament_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Удалить отдел",
-    description="Удалить отдел может только начальник компании или начальник этого отдела."
+    summary="Удалить отдел предприятия"
 )
 async def delete_department(
-    department_id: int,
+    departament_id: int,
     session: SessionDep,
-    current_user: UserTokenDep
 ):
-    department = await Department.get_by_id(session, department_id)
+    department = await Departaments.get_by_id(session, departament_id)
     if not department:
         raise HTTPException(status_code=404, detail="Отдел не найден")
+    await session.delete(department)
+    await session.commit()
+    return
 
-    employee = await Employee.get_by_id(session, current_user.employee_id)
-    if not employee:
-        raise HTTPException(status_code=403, detail="Нет доступа")
+@router_departments.get(
+    "/{departament_id}/employees",
+    response_model=List[departaments_schemas.DepartmentEmployeeResponse],
+    summary="Получить список сотрудников отдела"
+)
+async def list_department_employees(
+    departament_id: int,
+    session: SessionDep,
+):
+    de = await DepartamentsEmployees.get_all_by_departament_id(session, departament_id)
+    return de
 
-    enterprise = await Enterprise.get_by_id(session, department.enterprise_id)
 
-    if enterprise.boss_id != employee.employee_id and department.department_id != employee.department_id:
-        raise HTTPException(status_code=403, detail="Удалять может только начальник компании или отдела")
+@router_departments.post(
+    "/{departament_id}/employees",
+    response_model=departaments_schemas.DepartmentEmployeeResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Добавить сотрудника в отдел с указанием роли"
+)
+async def add_employee_to_department(
+    departament_id: int,
+    payload: departaments_schemas.DepartmentEmployeeCreate,
+    session: SessionDep,
+):
+    department = await Departaments.get_by_id(session, departament_id) 
+    if not department:
+        raise HTTPException(status_code=404, detail="Отдел не найден")
+    
+    de = await DepartamentsEmployees.get_by_employee_id_by_departament_id(session, payload.employee_id, departament_id)
+    if de:
+        raise HTTPException(
+            409,
+            "Сотрудник уже добавлен в этот отдел"
+        )
+    new_association = DepartamentsEmployees(
+        employee_id=payload.employee_id,
+        departament_id=departament_id,
+    )
+    session.add(new_association)
+    await session.commit()
+    await session.refresh(new_association)
+    
+    association = await DepartamentsEmployees.get_by_id(session, association.id)
+    return association
 
-    await department.delete(session)
+
+@router_departments.patch(
+    "/{departament_id}/employees/{employee_id}",
+    response_model=departaments_schemas.DepartmentEmployeeResponse,
+    summary="Обновить роль сотрудника в отделе"
+)
+async def update_employee_role_in_department(
+    departament_id: int,
+    employee_id: int,
+    payload: departaments_schemas.DepartmentEmployeeUpdate,
+    session: SessionDep,
+):
+    association = await DepartamentsEmployees.get_by_employee_id_by_departament_id(session, employee_id=employee_id, departament_id=departament_id)
+    if not association:
+        raise HTTPException(404, "Отдел не найден")
+        
+    association.role = payload.role or association.role
+    await session.commit()
+    await session.refresh(association)
+    return association
+
+
+@router_departments.delete(
+    "/{department_id}/employees/{employee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Удалить сотрудника из отдела"
+)
+async def remove_employee_from_department(
+    enterprise_id: int,
+    department_id: int,
+    employee_id: int,
+    session: SessionDep,
+):
+    association = await DepartamentsEmployees.get_by_employee_id_by_departament_id(session, employee_id=employee_id, department_id=department_id)
+    if not association:
+        raise HTTPException(status_code=404, detail="Связь сотрудника с отделом не найдена")
+    
+    await session.delete(association)
+    await session.commit()
+    return
+

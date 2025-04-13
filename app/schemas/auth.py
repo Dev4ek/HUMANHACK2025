@@ -4,8 +4,8 @@ from pydantic import BaseModel
 
 class AuthRegister(BaseModel):
     phone: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str
+    last_name: str
 
 
 class AuthLogin(BaseModel):

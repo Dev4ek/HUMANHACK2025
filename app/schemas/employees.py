@@ -1,16 +1,20 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 
-class EmployeeCreate(BaseModel):
-    first_name: str
-    last_name: str
-    phone: str
 
 class EmployeeResponse(BaseModel):
-    employee_id: int
+    id: int
+    
+    phone: str
     first_name: str
     last_name: str
+    
+    
+class EmployeeCreate(BaseModel):
     phone: str
+    first_name: str
+    last_name: str
+
 
 class EmployeeEnterpriseInvite(BaseModel):
     employee_id: int
@@ -28,3 +32,24 @@ class EmployeeEnterpriseUpdate(BaseModel):
 class EmployeeDepartmentUpdate(BaseModel):
     role: Optional[str] = None
 
+
+class DepartmentInfo(BaseModel):
+    id: int
+    name: str
+    role: Optional[str] = None
+
+class EnterpriseInfo(BaseModel):
+    id: int
+    name: str
+    boss_id: Optional[int] = None
+    departments: List[DepartmentInfo] = []
+
+class EmployeeInfo(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: str
+
+class EmployeeFullInfoResponse(BaseModel):
+    employee: EmployeeInfo
+    enterprises: List[EnterpriseInfo]

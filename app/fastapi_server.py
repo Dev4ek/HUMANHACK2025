@@ -9,7 +9,7 @@ from app.config import settings
 from fastapi.openapi.utils import get_openapi
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
-from app.routers import router_auth, router_departments
+from app.routers import router_auth, router_enterprises, router_departments, router_employees
 
 # from app.routers import router_auth, router_users, router_employees, router_enterprises, router_departments, router_documents
 
@@ -31,13 +31,12 @@ app.add_middleware(
 
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Включение роутеров
+# # Включение роутеров
 app.include_router(router_auth)
-# app.include_router(router_users)
-# app.include_router(router_employees)
-# app.include_router(router_enterprises)
+app.include_router(router_employees)
+app.include_router(router_enterprises)
 app.include_router(router_departments)
-# app.include_router(router_documents)
+# # app.include_router(router_documents)
 
 
 # Обработка исключений
@@ -75,7 +74,6 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Асинхронный запуск Uvicorn-сервера
 async def start_uvicorn():
     config = uvicorn.Config(app, host=settings.HOST, port=8082, workers=settings.WORKERS)
     server = uvicorn.Server(config)

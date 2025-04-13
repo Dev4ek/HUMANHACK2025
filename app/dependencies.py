@@ -6,7 +6,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import database
 from app.config import settings
-from app.models import Users
+from app.models import Employees
 
 # Зависимость для получения сессии из базы данных.
 SessionDep = Annotated[AsyncSession, Depends(database.get_session)]
@@ -38,9 +38,9 @@ async def get_current_user(
             detail="Токен не найден или некорректен.",
         ) from e
 
-    user = await session.get(Users, user_id)
+    user = await session.get(Employees, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Пользователь не найден")
     return user
 
-UserTokenDep = Annotated[Users, Depends(get_current_user)]
+UserTokenDep = Annotated[Employees, Depends(get_current_user)]
